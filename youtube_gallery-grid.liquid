@@ -1,0 +1,261 @@
+{{ 'component-card.css' | asset_url | stylesheet_tag }}
+{{ 'component-slider.css' | asset_url | stylesheet_tag }}
+
+{%- style -%}
+  .section-{{ section.id }}-padding {
+    padding-top: {{ section.settings.padding_top | times: 0.75 | round: 0 }}px;
+    padding-bottom: {{ section.settings.padding_bottom | times: 0.75 | round: 0 }}px;
+  }
+
+  @media screen and (min-width: 750px) {
+    .section-{{ section.id }}-padding {
+      padding-top: {{ section.settings.padding_top }}px;
+      padding-bottom: {{ section.settings.padding_bottom }}px;
+    }
+  }
+
+  .gallery-grid {
+    display: grid;
+    gap: 2rem;
+  }
+
+  @media screen and (min-width: 750px) {
+    .gallery-grid {
+      grid-template-columns: repeat({{ section.settings.columns_desktop }}, 1fr);
+    }
+  }
+
+  .gallery-item {
+    position: relative;
+    border-radius: 0.8rem;
+    overflow: hidden;
+  }
+
+  .gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+  }
+
+  .gallery-item:hover img {
+    transform: scale(1.05);
+  }
+
+  /* Mobile Slider Styles */
+  @media screen and (max-width: 749px) {
+    .slider.slider--mobile {
+      margin: 0;
+      position: relative;
+      display: flex;
+      flex-wrap: inherit;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 1rem;
+    }
+
+    .slider.slider--mobile::-webkit-scrollbar {
+      display: none;
+    }
+
+    .slider.slider--mobile .slider__slide {
+      flex: 0 0 100%;
+      max-width: 100%;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+      margin: 0;
+    }
+
+    .slider-buttons.large-up-hide {
+      gap: 1rem;
+      justify-content: center;
+      align-items: center;
+      padding: 1rem 0;
+    }
+  }
+{%- endstyle -%}
+
+{%- liquid
+  assign show_mobile_slider = false
+  if section.settings.enable_mobile_slider and section.blocks.size > 1
+    assign show_mobile_slider = true
+  endif
+-%}
+
+<div class="gallery-section page-width section-{{ section.id }}-padding">
+  {%- if section.settings.title != blank -%}
+    <h2 class="main-title {{ section.settings.heading_size }}{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}">
+      {{ section.settings.title }}
+    </h2>
+  {%- endif -%}
+
+  <slider-component class="slider-mobile-gutter">
+    <ul class="gallery-grid grid{% if show_mobile_slider %} slider slider--mobile{% endif %}"
+      id="Slider-{{ section.id }}"
+      role="list"
+    >
+      {%- for block in section.blocks -%}
+        <li
+          id="Slide-{{ section.id }}-{{ forloop.index }}"
+          class="gallery-item grid__item{% if show_mobile_slider %} slider__slide{% endif %}{% if settings.animations_reveal_on_scroll %} scroll-trigger animate--slide-in{% endif %}"
+          {{ block.shopify_attributes }}
+          {% if settings.animations_reveal_on_scroll %}
+            data-cascade
+            style="--animation-order: {{ forloop.index }};"
+          {% endif %}
+        >
+          <a href="{{ block.settings.video_link }}" class="gallery-link" target="_blank">
+            {%- if block.settings.image != blank -%}
+              {{
+                block.settings.image
+                | image_url: width: 1500
+                | image_tag:
+                  loading: 'lazy',
+                  sizes: '(min-width: 990px) calc(100vw - 10rem), 100vw',
+                  widths: '275, 550, 825, 1100, 1500'
+              }}
+            {%- else -%}
+              {{ 'collection-1' | placeholder_svg_tag: 'placeholder-svg' }}
+            {%- endif -%}
+          </a>
+        </li>
+      {%- endfor -%}
+    </ul>
+
+    {%- if show_mobile_slider -%}
+      <div class="slider-buttons large-up-hide">
+        <button type="button" class="slider-button slider-button--prev" name="previous" aria-label="{{ 'general.slider.previous_slide' | t }}">
+          <span class="svg-wrapper">{{ 'icon-caret.svg' | inline_asset_content }}</span>
+        </button>
+        <div class="slider-counter caption">
+          <span class="slider-counter--current">1</span>
+          <span aria-hidden="true"> / </span>
+          <span class="visually-hidden">{{ 'general.slider.of' | t }}</span>
+          <span class="slider-counter--total">{{ section.blocks.size }}</span>
+        </div>
+        <button type="button" class="slider-button slider-button--next" name="next" aria-label="{{ 'general.slider.next_slide' | t }}">
+          <span class="svg-wrapper">{{ 'icon-caret.svg' | inline_asset_content }}</span>
+        </button>
+      </div>
+    {%- endif -%}
+  </slider-component>
+</div>
+{% schema %}
+{
+  "name": "Galerie Vidéos",
+  "tag": "section",
+  "class": "section",
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Titre",
+      "default": "Galerie Vidéos"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "options": [
+        {
+          "value": "h2",
+          "label": "Petit"
+        },
+        {
+          "value": "h1",
+          "label": "Moyen"
+        },
+        {
+          "value": "h0",
+          "label": "Grand"
+        }
+      ],
+      "default": "h1",
+      "label": "Taille du titre"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "min": 2,
+      "max": 4,
+      "step": 1,
+      "default": 3,
+      "label": "Nombre de colonnes (Desktop)"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_mobile_slider",
+      "default": true,
+      "label": "Activer le carrousel sur mobile"
+    },
+    {
+      "type": "header",
+      "content": "Espacement"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Marge supérieure",
+      "default": 36
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Marge inférieure",
+      "default": 36
+    }
+  ],
+  "blocks": [
+    {
+      "type": "gallery_item",
+      "name": "Image",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "url",
+          "id": "video_link",
+          "label": "Lien vidéo YouTube"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Titre (optionnel)",
+          "info": "Titre affiché au survol de l'image"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Galerie Vidéos",
+      "blocks": [
+        {
+          "type": "gallery_item"
+        },
+        {
+          "type": "gallery_item"
+        },
+        {
+          "type": "gallery_item"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
